@@ -63,8 +63,8 @@ You get:    Dr. Priya Sharma — 67 appointments  [+ bar chart]
 ### Step 1 — Clone the repository
 
 ```bash
-git clone https://github.com/whizey/nl2sql_project.git
-cd nl2sql_project
+git clone https://github.com/whizey/NL--SQL.git
+cd NL--SQL
 ```
 
 ### Step 2 — Create a virtual environment
