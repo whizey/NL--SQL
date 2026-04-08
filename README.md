@@ -413,7 +413,3 @@ pip install -r requirements.txt && python setup_database.py \
 - [Plotly Python](https://plotly.com/python)
 
 ---
-
-<div align="center">
-Built with ❤️ for the Cogninest AI internship assignment · April 2026
-</div>
