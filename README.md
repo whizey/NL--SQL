@@ -360,7 +360,6 @@ nl2sql_project/
 ├── seed_memory.py       # Pre-seeds 15 Q→SQL pairs into agent memory
 ├── requirements.txt     # All Python dependencies
 ├── .env                 # Your API keys — never commit this file
-├── .env.example         # Template showing which keys are needed
 ├── .gitignore           # Excludes .env, venv, __pycache__, clinic.db
 ├── README.md            # This file
 ├── RESULTS.md           # Test results for all 20 assignment questions
