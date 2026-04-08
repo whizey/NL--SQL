@@ -1,118 +1,192 @@
-# Clinic NL2SQL — AI-Powered Natural Language to SQL System
+# NL → SQL — Ask Your Database in Plain English
 
-**Cogninest AI — AI/ML Developer Intern Assignment | Round 1**
+> Built for the **Cogninest AI** · AI/ML Developer Intern Assignment · Round 1
 
-Ask questions in plain English about a clinic database and get back SQL queries, data results, and charts — without writing a single line of SQL.
-
----
-
-## What This Builds
-
-```
-User: "Which doctor has the most appointments?"
-         ↓
-FastAPI → Vanna 2.0 Agent → LLM (Groq llama-3.3-70b) → SQL → clinic.db → JSON response
-```
+![Python](https://img.shields.io/badge/python-3.10+-blue?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-latest-009688?logo=fastapi&logoColor=white)
+![Vanna](https://img.shields.io/badge/Vanna-2.0.x-purple)
+![Groq](https://img.shields.io/badge/Primary-Groq%20llama--3.3--70b-orange)
+![Gemini](https://img.shields.io/badge/Fallback-Gemini%202.0%20Flash-4285f4)
+![SQLite](https://img.shields.io/badge/database-SQLite-003B57?logo=sqlite&logoColor=white)
 
 ---
 
-## LLM Provider Chosen
+## Project Description
 
-**Option B — Groq** (`llama-3.3-70b-versatile`)  
-Free tier at [console.groq.com](https://console.groq.com). No credit card required.
+**NL → SQL** is a Natural Language to SQL chatbot built with **FastAPI** and **Vanna 2.0**. It lets clinic staff ask questions in plain English and get results from a SQLite database — without writing a single line of SQL.
 
-To switch to Google Gemini: set `GOOGLE_API_KEY` in `.env` (and remove `GROQ_API_KEY`). The code auto-detects which key is present.
+The system takes your question, converts it to SQL using a large language model, validates the query for safety, runs it on the database, and returns a table of results along with an interactive chart.
+
+```
+You type:   "Which doctor has the most appointments?"
+
+System generates:
+  SELECT d.name, COUNT(a.id) AS total
+  FROM doctors d
+  JOIN appointments a ON d.id = a.doctor_id
+  GROUP BY d.name ORDER BY total DESC LIMIT 1
+
+You get:    Dr. Priya Sharma — 67 appointments  [+ bar chart]
+```
+
+**LLM setup:**
+- **Primary:** Groq `llama-3.3-70b-versatile` — fast, free tier
+- **Fallback:** Google Gemini `gemini-2.0-flash` — kicks in automatically if Groq hits its rate limit
+
+> **Note for reviewers:** This is a locally-run API. Clone the repo, follow the setup steps below, and the server will run at `http://localhost:8000` on your machine.
 
 ---
 
-## Project Structure
+## Table of Contents
 
-```
-project/
-├── setup_database.py   # Creates clinic.db with 5 tables + dummy data
-├── vanna_setup.py      # Vanna 2.0 Agent initialisation
-├── seed_memory.py      # Pre-seeds 15 Q→SQL examples into agent memory
-├── main.py             # FastAPI application (POST /chat, GET /health)
-├── requirements.txt    # All dependencies
-├── .env.example        # Template for API keys
-├── .gitignore
-├── README.md           # This file
-├── RESULTS.md          # Test results for 20 questions
-└── clinic.db           # Generated SQLite database (run setup_database.py)
-```
+- [Project Description](#project-description)
+- [Setup Instructions](#setup-instructions)
+- [How to Run the Memory Seeding Script](#how-to-run-the-memory-seeding-script)
+- [How to Start the API Server](#how-to-start-the-api-server)
+- [API Documentation](#api-documentation)
+- [Architecture Overview](#architecture-overview)
+- [Database Schema](#database-schema)
+- [Project Structure](#project-structure)
+- [Security](#security)
+- [Bonus Features](#bonus-features)
 
 ---
 
 ## Setup Instructions
 
-### 1. Clone the repo
+### Prerequisites
+
+- Python 3.10+
+- A free [Groq API key](https://console.groq.com) — sign up, takes 2 minutes
+- A free [Gemini API key](https://aistudio.google.com/apikey) — sign in with Google
+
+### Step 1 — Clone the repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/cogninest-nl2sql.git
-cd cogninest-nl2sql
+git clone https://github.com/whizey/nl2sql_project.git
+cd nl2sql_project
 ```
 
-### 2. Create a virtual environment
+### Step 2 — Create a virtual environment
 
 ```bash
 python -m venv venv
-source venv/bin/activate        # Linux / macOS
-# venv\Scripts\activate         # Windows
+source venv/bin/activate        # macOS / Linux
+venv\Scripts\activate           # Windows
 ```
 
-### 3. Install dependencies
+### Step 3 — Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Set your API key
+### Step 4 — Set up your API keys
 
+Create a `.env` file in the project root:
 
-cp .env.example .env
-# Edit .env and paste your Groq API key:
-# GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxx
+```env
+# Primary LLM — get free key at console.groq.com
+GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxx
 
+# Fallback LLM — get free key at aistudio.google.com/apikey
+GOOGLE_API_KEY=AIzaSyxxxxxxxxxxxxxxxxxx
+```
 
-Get a free Groq key at [console.groq.com](https://console.groq.com) → API Keys → Create.
+> The system uses Groq by default. If Groq hits its daily limit, it automatically switches to Gemini — no manual changes needed.
 
-### 5. Create the database
+### Step 5 — Create the database
 
 ```bash
 python setup_database.py
 ```
 
-Expected output:
+<details>
+<summary>Expected output</summary>
+
 ```
 Seeding doctors ...
 Seeding patients ...
 Seeding appointments ...
 Seeding treatments ...
 Seeding invoices ...
-  patients: 200 rows
-  doctors: 15 rows
+  patients:     200 rows
+  doctors:       15 rows
   appointments: 500 rows
-  treatments: 350 rows
-  invoices: 300 rows
+  treatments:   350 rows
+  invoices:     300 rows
 
 Done! Database saved to: clinic.db
 ```
 
-### 6. Seed agent memory
+</details>
+
+---
+
+## How to Run the Memory Seeding Script
+
+Vanna 2.0 uses `DemoAgentMemory` to learn from examples. This script pre-loads **15 verified question→SQL pairs** into the agent's memory so it performs well from the very first query.
+
+> **Important:** Run this after `setup_database.py` — the database must exist first.
 
 ```bash
 python seed_memory.py
 ```
 
-This pre-loads 15 verified question→SQL pairs so the agent has a head start.
+<details>
+<summary>Expected output</summary>
 
-### 7. Start the API server
+```
+Seeding 15 Q→SQL pairs into agent memory...
+
+  [01] OK  — How many patients are there?
+  [02] OK  — List all patients from Mumbai
+  [03] OK  — Count patients by gender
+  [04] OK  — How many appointments does each doctor have?
+  [05] OK  — Which doctor has the most appointments?
+  [06] OK  — How many appointments are there by status?
+  [07] OK  — Show appointments for the last 3 months
+  [08] OK  — Show appointments grouped by month
+  [09] OK  — What is the total revenue?
+  [10] OK  — Show unpaid invoices
+  [11] OK  — What is the average treatment cost?
+  [12] OK  — Show revenue trend by month
+  [13] OK  — How many appointments were completed last month?
+  [14] OK  — List patients with more than 2 appointments
+  [15] OK  — Show revenue by doctor
+
+Done. Agent memory now has 15 items.
+```
+
+</details>
+
+The 15 pairs cover all required categories — patient queries, doctor queries, appointment queries, financial queries, and time-based queries.
+
+> **Vanna 2.0 note:** This does NOT use the old `vn.train(ddl=..., sql=...)` pattern from Vanna 0.x. Vanna 2.0 uses `DemoAgentMemory` and `save_tool_usage` instead — a completely different architecture.
+
+---
+
+## How to Start the API Server
 
 ```bash
 uvicorn main:app --port 8000 --reload
 ```
 
-The API is now live at **http://localhost:8000**
+The server starts at **http://localhost:8000**
+
+| URL | Description |
+|-----|-------------|
+| `http://localhost:8000` | Browser UI — type questions here |
+| `http://localhost:8000/chat` | `POST` endpoint for API calls |
+| `http://localhost:8000/health` | Health check |
+| `http://localhost:8000/docs` | Auto-generated Swagger docs |
+
+**One-command setup for reviewers:**
+
+```bash
+pip install -r requirements.txt && python setup_database.py \
+&& python seed_memory.py && uvicorn main:app --port 8000
+```
 
 ---
 
@@ -120,22 +194,33 @@ The API is now live at **http://localhost:8000**
 
 ### `POST /chat`
 
-Ask a natural language question about the clinic data.
+Converts a plain English question into SQL, executes it, and returns results with an optional chart.
 
-**Request:**
+**Request body:**
+
 ```json
 {
   "question": "Show me the top 5 patients by total spending"
 }
 ```
 
-**Response:**
+| Field | Type | Required | Constraints |
+|-------|------|----------|-------------|
+| `question` | string | ✅ | min 3 chars, max 500 chars |
+
+**Success response `200 OK`:**
+
 ```json
 {
-  "message":    "Here are the top 5 patients by total spending...",
-  "sql_query":  "SELECT p.first_name, p.last_name, SUM(i.total_amount) AS total_spent ...",
+  "message":    "Here are your results.",
+  "sql_query":  "SELECT p.first_name, p.last_name, SUM(i.total_amount) AS total_spent FROM patients p JOIN invoices i ON p.id = i.patient_id GROUP BY p.id ORDER BY total_spent DESC LIMIT 5",
+  "model_used": "Groq · llama-3.3-70b",
   "columns":    ["first_name", "last_name", "total_spent"],
-  "rows":       [["Aarav", "Sharma", 7820.50], ["Priya", "Patel", 6910.00]],
+  "rows":       [
+    ["Aarav",  "Sharma", 7820.50],
+    ["Priya",  "Patel",  6910.00],
+    ["Rahul",  "Gupta",  6540.75]
+  ],
   "row_count":  5,
   "chart":      { "data": [...], "layout": {...} },
   "chart_type": "bar",
@@ -143,27 +228,31 @@ Ask a natural language question about the clinic data.
 }
 ```
 
+**Error responses:**
+
+| Status | When it happens | Example message |
+|--------|----------------|-----------------|
+| `400` | SQL was unsafe — blocked before running | `"Blocked SQL: Only SELECT queries are allowed."` |
+| `422` | SQL ran but hit a database error | `"no such column: t.doctor_id"` |
+| `429` | Too many requests | `"Too many requests — slow down."` |
+| `503` | Both Groq and Gemini failed | `"Both Groq and Gemini failed. Check your API keys."` |
+
 **cURL example:**
+
 ```bash
 curl -X POST http://localhost:8000/chat \
   -H "Content-Type: application/json" \
   -d '{"question": "How many patients do we have?"}'
 ```
 
-**Validation errors** (unsafe SQL) return HTTP 400:
-```json
-{
-  "message": "The AI generated an unsafe query. Only SELECT queries are permitted."
-}
-```
-
 ---
 
 ### `GET /health`
 
-Check server and database status.
+Checks that the server is running and the database is reachable.
 
-**Response:**
+**Response `200 OK`:**
+
 ```json
 {
   "status":             "ok",
@@ -173,6 +262,7 @@ Check server and database status.
 ```
 
 **cURL example:**
+
 ```bash
 curl http://localhost:8000/health
 ```
@@ -182,60 +272,139 @@ curl http://localhost:8000/health
 ## Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  FastAPI (main.py)                                  │
-│  ├── POST /chat                                     │
-│  │   ├── Input validation (Pydantic)                │
-│  │   ├── Rate limiting (20 req/min per IP)          │
-│  │   ├── Cache lookup (5 min TTL)                   │
-│  │   ├── Vanna 2.0 Agent → LLM → SQL               │
-│  │   ├── SQL Validator (SELECT only, no DDL)        │
-│  │   ├── SqliteRunner → clinic.db                   │
-│  │   ├── Plotly chart builder                       │
-│  │   └── JSON response                              │
-│  └── GET /health                                    │
-│                                                     │
-│  Vanna 2.0 Agent (vanna_setup.py)                  │
-│  ├── LLM: Groq llama-3.3-70b (OpenAILlmService)   │
-│  ├── Tools: RunSqlTool, VisualizeDataTool           │
-│  ├── Memory: DemoAgentMemory (15 seeded examples)   │
-│  └── DB: SqliteRunner → clinic.db                  │
-│                                                     │
-│  clinic.db (SQLite)                                 │
-│  ├── patients (200 rows)                            │
-│  ├── doctors (15 rows)                              │
-│  ├── appointments (500 rows)                        │
-│  ├── treatments (350 rows)                          │
-│  └── invoices (300 rows)                            │
-└─────────────────────────────────────────────────────┘
+User (browser or API client)
+          │
+          ▼
+┌─────────────────────────────────────────┐
+│              FastAPI (main.py)          │
+│                                         │
+│  1. Validate input (Pydantic)           │
+│  2. Check rate limit (20 req / 60s)     │
+│  3. Check cache (5-min TTL)             │
+└──────────────┬──────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────┐
+│              LLM Layer                  │
+│                                         │
+│  Primary  → Groq llama-3.3-70b         │
+│  Fallback → Gemini 2.0 Flash           │
+│  (auto-switches on rate limit or error) │
+└──────────────┬──────────────────────────┘
+               │ raw SQL
+               ▼
+┌─────────────────────────────────────────┐
+│           SQL Validator                 │
+│                                         │
+│  ✓ SELECT only                          │
+│  ✗ INSERT / UPDATE / DELETE / DROP      │
+│  ✗ EXEC / xp_ / GRANT / SHUTDOWN       │
+│  ✗ sqlite_master / system tables        │
+└──────────────┬──────────────────────────┘
+               │ safe SQL
+               ▼
+┌─────────────────────────────────────────┐
+│          SQLite (clinic.db)             │
+│  patients · doctors · appointments      │
+│  treatments · invoices                  │
+└──────────────┬──────────────────────────┘
+               │ rows + columns
+               ▼
+┌─────────────────────────────────────────┐
+│        Plotly Chart Builder             │
+│  Bar chart → rankings / comparisons     │
+│  Line chart → time-series / trends      │
+└──────────────┬──────────────────────────┘
+               │
+               ▼
+          JSON Response
+```
+
+**Vanna 2.0 Agent** (`vanna_setup.py`):
+
+| Component | Role |
+|-----------|------|
+| `OpenAILlmService` | Connects to Groq (OpenAI-compatible API) |
+| `SqliteRunner` | Runs SQL queries on `clinic.db` |
+| `DemoAgentMemory` | Stores and retrieves example Q→SQL pairs |
+| `RunSqlTool` | Executes the generated SQL |
+| `VisualizeDataTool` | Handles chart generation |
+| `SaveQuestionToolArgsTool` | Saves correct queries to memory |
+| `SearchSavedCorrectToolUsesTool` | Finds similar past queries |
+
+---
+
+## Database Schema
+
+```sql
+patients    (id, first_name, last_name, email, phone, date_of_birth, gender, city, registered_date)
+doctors     (id, name, specialization, department, phone)
+appointments(id, patient_id, doctor_id, appointment_date, status, notes)
+            -- status: 'Scheduled' | 'Completed' | 'Cancelled' | 'No-Show'
+treatments  (id, appointment_id, treatment_name, cost, duration_minutes)
+invoices    (id, patient_id, invoice_date, total_amount, paid_amount, status)
+            -- status: 'Paid' | 'Pending' | 'Overdue'
+```
+
+**Data volumes:** 200 patients · 15 doctors · 500 appointments · 350 treatments · 300 invoices
+
+---
+
+## Project Structure
+
+```
+nl2sql_project/
+├── main.py              # FastAPI app — routes, LLM calls, SQL execution, browser UI
+├── vanna_setup.py       # Vanna 2.0 Agent initialisation
+├── setup_database.py    # Creates clinic.db schema + inserts all dummy data
+├── seed_memory.py       # Pre-seeds 15 Q→SQL pairs into agent memory
+├── requirements.txt     # All Python dependencies
+├── .env                 # Your API keys — never commit this file
+├── .env.example         # Template showing which keys are needed
+├── .gitignore           # Excludes .env, venv, __pycache__, clinic.db
+├── README.md            # This file
+├── RESULTS.md           # Test results for all 20 assignment questions
+└── clinic.db            # SQLite database (auto-generated by setup_database.py)
 ```
 
 ---
 
-## Bonus Features Implemented
+## Security
+
+All SQL generated by the LLM is validated before it ever reaches the database:
+
+| Check | Blocked values |
+|-------|----------------|
+| Statement type | Anything that is not `SELECT` |
+| Write operations | `INSERT` `UPDATE` `DELETE` `DROP` `ALTER` `TRUNCATE` `CREATE` |
+| Dangerous functions | `EXEC` `EXECUTE` `xp_` `sp_` `GRANT` `REVOKE` `SHUTDOWN` |
+| System tables | `sqlite_master` `sqlite_sequence` `information_schema` |
+
+If validation fails the query is rejected immediately — it never reaches the database.
+
+API keys are stored in `.env` and never hardcoded anywhere in the source code.
+
+---
+
+## Bonus Features
 
 | Feature | Details |
-|---|---|
-| Chart generation | Plotly bar/line charts returned in response |
-| Input validation | Pydantic model, min/max length, blank check |
-| Query caching | 5-minute in-memory cache keyed by question hash |
-| Rate limiting | 20 requests/minute per IP address |
-| Structured logging | All requests and errors logged with timestamps |
-
----
-
-## One-Command Run (for reviewers)
-
-```bash
-pip install -r requirements.txt && python setup_database.py \
-  && python seed_memory.py && uvicorn main:app --port 8000
-```
+|---------|---------|
+| 📊 Chart generation | Plotly bar and line charts returned in every response |
+| ✅ Input validation | Pydantic with min/max length and blank-check validator |
+| ⚡ Query caching | MD5-keyed 5-minute in-memory cache — same question returns instantly |
+| 🚦 Rate limiting | Sliding window — 20 requests per 60 seconds per IP |
+| 📋 Structured logging | Timestamped logs for every request, LLM call, SQL, and error |
+| 🔀 Automatic LLM fallback | Groq → Gemini on any failure — zero downtime, zero manual intervention |
+| 🏷️ Model indicator | UI badge shows which model answered — green for Groq, blue for Gemini |
 
 ---
 
 ## Resources
 
-- [Vanna AI Docs](https://vanna.ai/docs)
+- [Vanna AI Documentation](https://vanna.ai/docs)
 - [Vanna 2.0 Quickstart](https://vanna.ai/docs/tutorials/quickstart-5min)
 - [Groq Console](https://console.groq.com)
-- [FastAPI Docs](https://fastapi.tiangolo.com)
+- [Google AI Studio](https://aistudio.google.com/apikey)
+- [FastAPI Documentation](https://fastapi.tiangolo.com)
+- [Plotly Python](https://plotly.com/python)
