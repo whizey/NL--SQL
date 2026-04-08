@@ -20,5 +20,6 @@ python-dotenv
 
 # Option B — Groq (OpenAI-compatible, no extra package needed beyond vanna)
 groq
+google-generativeai
 
 # Option C — Ollama: install the Ollama desktop app separately, no pip package needed
