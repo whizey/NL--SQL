@@ -39,8 +39,6 @@ LIMIT 5
 | Sneha | Singh | ₹6,320.25 |
 | Vikram | Nair | ₹6,105.00 |
 
-**Interactive Chart:** [Bar chart showing patient spending]
-
 **Performance:**
 - ✅ Execution time: 340ms
 - ✅ Query explanation: Multi-table join with aggregate function
