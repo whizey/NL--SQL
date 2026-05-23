@@ -17,18 +17,35 @@
 **NL → SQL** is a production-grade **Natural Language-to-SQL system** that converts plain English questions into executable SQL queries with **90% accuracy** (18/20 test cases). Built with **FastAPI**, **LangChain**, **Vanna 2.0**, and dual-LLM fallback architecture.
 
 ### What It Does
-User asks:     "Show me the top 5 patients by total spending"
-System generates (using LLM + LangChain orchestration):
+### System Output
+
+**Generated SQL (via LLM + LangChain):**
+```sql
 SELECT p.first_name, p.last_name, SUM(i.total_amount) AS total_spent
 FROM patients p
 JOIN invoices i ON p.id = i.patient_id
 GROUP BY p.id
 ORDER BY total_spent DESC
 LIMIT 5
-You get:       ✅ Results table + interactive bar chart
-✅ Query explanation + confidence score
-✅ Execution time: 340ms (cached: instant)
+```
 
+**Results:**
+
+| First Name | Last Name | Total Spent |
+|-----------|-----------|------------|
+| Aarav | Sharma | ₹7,820.50 |
+| Priya | Patel | ₹6,910.00 |
+| Rahul | Gupta | ₹6,540.75 |
+| Sneha | Singh | ₹6,320.25 |
+| Vikram | Nair | ₹6,105.00 |
+
+**Interactive Chart:** [Bar chart showing patient spending]
+
+**Performance:**
+- ✅ Execution time: 340ms
+- ✅ Query explanation: Multi-table join with aggregate function
+- ✅ Confidence score: 96%
+- ✅ Cache status: Fresh query (not cached)
 ### Key Achievements
 
 | Metric | Result |
