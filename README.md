@@ -44,54 +44,71 @@ You get:       ✅ Results table + interactive bar chart
 ## 🏗️ Architecture — Full Tech Stack
 
 ### **LangChain Orchestration Pipeline**
-┌─────────────────────────────────────────────────────────┐
-│         LangChain Agent Orchestrator                    │
-│                                                         │
-│  ✓ Query routing & validation                          │
-│  ✓ LLM fallback chain (Groq → Gemini)                 │
-│  ✓ Tool-use pattern for SQL generation                │
-│  ✓ Memory management & context preservation           │
-└────────────────────┬────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                 │
+│            LangChain Agent Orchestrator                         │
+│                                                                 │
+│  ✓ Query routing & validation                                  │
+│  ✓ LLM fallback chain (Groq → Gemini)                         │
+│  ✓ Tool-use pattern for SQL generation                        │
+│  ✓ Memory management & context preservation                   │
+│                                                                 │
+└────────────────────────┬────────────────────────────────────────┘
 │
-┌───────────┴────────────┐
-│                        │
-▼                        ▼
-┌─────────────┐          ┌─────────────┐
-│  Groq LLM   │          │  Vanna 2.0  │
-│ llama-3.3   │  ────→   │   Agent     │
-│  70B        │          │             │
-└─────────────┘          └────┬────────┘
-│ (rate limit)           │
-│                        │
-▼                        ▼
-┌─────────────────────────────────────┐
-│  SQL Validator & Sanitizer          │
-│  ✗ INSERT/UPDATE/DELETE/DROP        │
-│  ✗ System table access              │
-│  ✓ SELECT-only enforcement          │
-└────────────┬────────────────────────┘
-│
-▼
-┌─────────────────────────────────┐
-│  SQLite Database                │
-│  (5 tables · 1,350 rows)        │
-└────────────┬────────────────────┘
+┌────────────┴────────────┐
+│                         │
+▼                         ▼
+┌─────────────┐           ┌──────────────┐
+│  Groq LLM   │           │  Vanna 2.0   │
+│ llama-3.3   │    ──→    │   Agent      │
+│  70B        │           │              │
+└─────────────┘           └──────┬───────┘
+│                           │
+│ (rate limit)              │
+▼                           ▼
+┌──────────────────────────────────────┐
+│   SQL Validator & Sanitizer          │
+│                                      │
+│  ✗ INSERT/UPDATE/DELETE/DROP         │
+│  ✗ System table access               │
+│  ✓ SELECT-only enforcement           │
+└──────────────┬───────────────────────┘
 │
 ▼
-┌─────────────────────────────────┐
-│  Plotly Chart Generation        │
-│  (auto-detect chart type)       │
-└────────────┬────────────────────┘
+┌──────────────────────────────────────┐
+│   SQLite Database                    │
+│   (5 tables · 1,350 rows)           │
+└──────────────┬───────────────────────┘
+│
+▼
+┌──────────────────────────────────────┐
+│   Plotly Chart Generation            │
+│   (auto-detect chart type)           │
+└──────────────┬───────────────────────┘
 │
 ▼
 JSON Response with:
-┌─────────────────────────────────┐
-│ • SQL query (for transparency)  │
-│ • Result rows + columns         │
-│ • Interactive chart             │
-│ • Model used badge              │
-│ • Cache status                  │
-└─────────────────────────────────┘
+┌──────────────────────────────────────┐
+│ • SQL query (for transparency)       │
+│ • Result rows + columns              │
+│ • Interactive chart                  │
+│ • Model used badge                   │
+│ • Cache status                       │
+└──────────────────────────────────────┘
+
+### **Component Breakdown**
+
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| **Orchestration** | LangChain Agent | Query routing, LLM selection, fallback logic, memory |
+| **Primary LLM** | Groq `llama-3.3-70b` | Fast SQL generation (default choice) |
+| **SQL Engine** | Vanna 2.0 | NL→SQL translation with few-shot learning |
+| **Fallback LLM** | Gemini 2.0 Flash | Backup when Groq rate-limits (automatic) |
+| **Security** | Custom SQL Validator | Blocks injection, write ops, system access |
+| **Database** | SQLite | 5 tables, 1,350 rows, indexed |
+| **Visualization** | Plotly | Auto-generates charts (bar/line) |
+| **API** | FastAPI | REST, validation, caching, rate limiting |
+This will render beautifully on GitHub README. Perfect.Haiku 4.5
 
 ### **LangChain Integration Details**
 
