@@ -188,9 +188,7 @@ uvicorn main:app --port 8000 --reload
 
 **Server is live at:**
 - 🌐 **Browser UI:** http://localhost:8000
-- 📡 **API Endpoint:** http://localhost:8000/chat (POST)
-- 📊 **Swagger Docs:** http://localhost:8000/docs
-- ❤️ **Health Check:** http://localhost:8000/health
+
 
 ---
 
