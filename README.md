@@ -57,26 +57,34 @@ LIMIT 5
 ---
 
 ## 🏗️ Architecture — Full Tech Stack
+
+### LangChain Orchestration Pipeline
+
+```
 User Question
-↓
+    ↓
 LangChain Agent Orchestrator
-↓
-├─→ Vanna 2.0 (SQL Generation)
-↓
-├─→ Groq llama-3.3-70b (Primary)
-│   └─→ (rate limit) → Gemini 2.0 Flash (Fallback)
-↓
+    ↓
+Vanna 2.0 (SQL Generation)
+    ↓
+Groq llama-3.3-70b (Primary)
+    ↓
+[Rate Limit] → Gemini 2.0 Flash (Fallback)
+    ↓
 SQL Validator & Sanitizer
-├─→ ✗ Block: INSERT/UPDATE/DELETE/DROP
-├─→ ✗ Block: System table access
-└─→ ✓ Allow: SELECT only
-↓
-SQLite Database (5 tables · 1,350 rows)
-↓
+    ↓
+✓ SELECT only
+✗ Block: INSERT/UPDATE/DELETE/DROP
+✗ Block: System table access
+    ↓
+SQLite Database
+(5 tables · 1,350 rows)
+    ↓
 Plotly Chart Generation
-↓
+    ↓
 JSON Response
-└─→ SQL query + rows + chart + metadata
+(SQL query + rows + chart + metadata)
+```
 
 
 ### **Component Breakdown**
