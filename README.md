@@ -42,59 +42,27 @@ You get:       ✅ Results table + interactive bar chart
 ---
 
 ## 🏗️ Architecture — Full Tech Stack
+User Question
+↓
+LangChain Agent Orchestrator
+↓
+├─→ Vanna 2.0 (SQL Generation)
+↓
+├─→ Groq llama-3.3-70b (Primary)
+│   └─→ (rate limit) → Gemini 2.0 Flash (Fallback)
+↓
+SQL Validator & Sanitizer
+├─→ ✗ Block: INSERT/UPDATE/DELETE/DROP
+├─→ ✗ Block: System table access
+└─→ ✓ Allow: SELECT only
+↓
+SQLite Database (5 tables · 1,350 rows)
+↓
+Plotly Chart Generation
+↓
+JSON Response
+└─→ SQL query + rows + chart + metadata
 
-### **LangChain Orchestration Pipeline**
-┌─────────────────────────────────────────────────────────────────┐
-│                                                                 │
-│            LangChain Agent Orchestrator                         │
-│                                                                 │
-│  ✓ Query routing & validation                                  │
-│  ✓ LLM fallback chain (Groq → Gemini)                         │
-│  ✓ Tool-use pattern for SQL generation                        │
-│  ✓ Memory management & context preservation                   │
-│                                                                 │
-└────────────────────────┬────────────────────────────────────────┘
-│
-┌────────────┴────────────┐
-│                         │
-▼                         ▼
-┌─────────────┐           ┌──────────────┐
-│  Groq LLM   │           │  Vanna 2.0   │
-│ llama-3.3   │    ──→    │   Agent      │
-│  70B        │           │              │
-└─────────────┘           └──────┬───────┘
-│                           │
-│ (rate limit)              │
-▼                           ▼
-┌──────────────────────────────────────┐
-│   SQL Validator & Sanitizer          │
-│                                      │
-│  ✗ INSERT/UPDATE/DELETE/DROP         │
-│  ✗ System table access               │
-│  ✓ SELECT-only enforcement           │
-└──────────────┬───────────────────────┘
-│
-▼
-┌──────────────────────────────────────┐
-│   SQLite Database                    │
-│   (5 tables · 1,350 rows)           │
-└──────────────┬───────────────────────┘
-│
-▼
-┌──────────────────────────────────────┐
-│   Plotly Chart Generation            │
-│   (auto-detect chart type)           │
-└──────────────┬───────────────────────┘
-│
-▼
-JSON Response with:
-┌──────────────────────────────────────┐
-│ • SQL query (for transparency)       │
-│ • Result rows + columns              │
-│ • Interactive chart                  │
-│ • Model used badge                   │
-│ • Cache status                       │
-└──────────────────────────────────────┘
 
 ### **Component Breakdown**
 
