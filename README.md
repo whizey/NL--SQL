@@ -198,10 +198,6 @@ NL--SQL/
 
 ---
 
-## License
 
-MIT
-
----
 
 *Built by Supriya Deb · [github.com/whizey](https://github.com/whizey)*
